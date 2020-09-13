@@ -1,9 +1,12 @@
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
+const socketio = require('socket.io');
+
 
 const app = express();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
+const server = http.createServer(app);
+const io = socketio(server);
 
 app.use(cors());
 app.use(express.json());
@@ -26,14 +29,21 @@ app.get('/room/:id', (req, res) => {
 app.post('/rooms', (req, res) => {
     const {roomId} = req.body;
 
-    if (!rooms.has(roomId)) {
-        rooms.set(roomId, new Map([
-            ['users', new Map()],
-            ['messages', []]
-        ]))
-    }
+    if (roomId.match('(?=.*[0-9])(?=.*[a-z])[0-9a-z]{10}') === null) {
+        res.status(500).json({
+            status: false,
+            message: "Room ID must contains only of numbers and lowercase letters!"
+        })
+    } else {
+        if (!rooms.has(roomId)) {
+            rooms.set(roomId, new Map([
+                ['users', new Map()],
+                ['messages', []]
+            ]))
+        }
 
-    res.send()
+        res.send()
+    }
 });
 
 io.on('connection', socket => {
@@ -67,7 +77,7 @@ io.on('connection', socket => {
     console.log('user connected', socket.id)
 });
 
-http.listen(process.env.PORT || 3001, (err) => {
+server.listen(process.env.PORT || 3001, (err) => {
     if (err) {
         throw Error(err)
     }
