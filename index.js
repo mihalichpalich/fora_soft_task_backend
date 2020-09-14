@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
@@ -7,12 +8,14 @@ const socketio = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
+const PORT = 3001;
 
 app.use(cors());
 app.use(express.json());
 
 const rooms = new Map();
 
+//get the arrays of users and messages in the room by roomID
 app.get('/room/:id', (req, res) => {
     const {id: roomId} = req.params;
 
@@ -26,6 +29,7 @@ app.get('/room/:id', (req, res) => {
     res.json(dataObj)
 });
 
+//create the room after roomID validation
 app.post('/rooms', (req, res) => {
     const {roomId} = req.body;
 
@@ -47,6 +51,7 @@ app.post('/rooms', (req, res) => {
 });
 
 io.on('connection', socket => {
+    //add the user to the users list in the room
     socket.on('ROOM:JOIN', ({roomId, userName}) => {
         socket.join(roomId);
         rooms.get(roomId).get('users').set(socket.id, userName);
@@ -54,6 +59,7 @@ io.on('connection', socket => {
         io.in(roomId).emit('ROOM:SET_USERS', users);
     });
 
+    //send the message to all users in the room
     socket.on('ROOM:NEW_MESSAGE', ({roomId, userName, text, sendingTime}) => {
         const dataObj = {
             userName,
@@ -65,6 +71,7 @@ io.on('connection', socket => {
         socket.to(roomId).broadcast.emit('ROOM:NEW_MESSAGE', dataObj);
     });
 
+    //delete user from the users list after disconnecting
     socket.on('disconnect', () => {
         rooms.forEach((value, roomId) => {
             if (value.get('users').delete(socket.id)) {
@@ -77,7 +84,7 @@ io.on('connection', socket => {
     console.log('user connected', socket.id)
 });
 
-server.listen(process.env.PORT || 3001, (err) => {
+server.listen(process.env.PORT || PORT, (err) => {
     if (err) {
         throw Error(err)
     }
