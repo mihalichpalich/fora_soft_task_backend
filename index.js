@@ -8,7 +8,7 @@ const socketio = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
-const PORT = 3001;
+const PORT = process.env.PORT ||3001;
 
 app.use(cors());
 app.use(express.json());
@@ -84,7 +84,7 @@ io.on('connection', socket => {
     console.log('user connected', socket.id)
 });
 
-server.listen(process.env.PORT || PORT, (err) => {
+server.listen(PORT, (err) => {
     if (err) {
         throw Error(err)
     }
